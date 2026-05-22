@@ -28,7 +28,6 @@ google-cloud-firestore
 click
 h11
 httptools
-uvloop
 watchfiles
 websockets
 starlette

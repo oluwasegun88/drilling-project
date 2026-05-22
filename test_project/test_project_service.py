@@ -47,3 +47,45 @@ class TestProjectService:
                 "total_pages": total_pages
             }
         }
+
+
+    async def find_by_date_range(
+            self,
+            filters: Optional[Dict[str, Any]] = None
+    ):
+        filters = filters or {}
+
+        # Extract date parameters
+        start_date = filters.get("start_date", "2025-06-01")
+        end_date = filters.get("end_date", "2025-08-25")
+            
+        # Extract pagination parameters
+        page = filters.get("page", 1)
+        limit = filters.get("limit", 100)
+        offset = (page - 1) * limit
+        
+        # Prepare repository filters
+        repo_filters = {
+            "asset": filters.get("asset"),
+            "limit": limit,
+            "offset": offset,
+            "start_date": start_date,
+            "end_date": end_date
+        }
+        
+        
+        # Get data from repository
+        data, total = await self.repo.find_by_date_range(repo_filters)
+        
+        # Calculate pagination info
+        total_pages = (total + limit - 1) // limit if limit > 0 else 0
+        
+        return {
+            "data": data,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total": total,
+                "total_pages": total_pages
+            }
+        }

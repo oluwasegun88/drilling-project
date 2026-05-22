@@ -24,3 +24,27 @@ async def fetch_all_records(
     response = await service.fetch_all_records(filters)
 
     return response
+
+@router.get("/fetch-by-date-range")
+async def fetch_all_records(
+        asset: Optional[str] = Query(None, description="Asset filter"),
+        start_date: Optional[str] = Query(None, description="Start Date"),
+        end_date: Optional[str] = Query(None, description="End Date"),
+        page: Optional[int] = Query(None),
+        limit: Optional[int] = Query(None),
+):
+    service = TestProjectService()
+    filters = {
+        "asset": asset,
+        "page": page,
+        "limit": limit,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+
+    # Remove None values
+    filters = {k: v for k, v in filters.items() if v is not None}
+
+    response = await service.find_by_date_range(filters)
+
+    return response
