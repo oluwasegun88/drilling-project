@@ -1,0 +1,6 @@
+.env
+email_config.py
+firebase_service_account.json
+__pycache__/
+*.pyc
+.vscode/
