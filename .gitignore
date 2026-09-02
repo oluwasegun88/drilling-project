@@ -33,3 +33,8 @@ __pycache__/
 *.pyd
 
 firebase_database/firebase_service_account.json
+
+email_config.py
+firebase_service_account.json
+firebase_service_account_staging.json
+Awoba NW 5 NPT_Drilling_Performance_Dashboard.xlsx
