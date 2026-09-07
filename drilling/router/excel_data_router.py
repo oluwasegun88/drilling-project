@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -80,19 +80,24 @@ def load_npt_records():
 
 def apply_filters(
     records,
-    phase:             Optional[str] = None,
-    category:          Optional[str] = None,
-    responsible_party: Optional[str] = None,
-    start_date:        Optional[str] = None,
-    end_date:          Optional[str] = None,
+    phase:              Optional[str]       = None,
+    category:           Optional[str]       = None,
+    responsible_party:  Optional[List[str]] = None,
+    start_date:         Optional[str]       = None,
+    end_date:           Optional[str]       = None,
 ):
-    """Apply all optional filters to a list of records."""
+    """
+    Apply all optional filters to a list of records.
+    responsible_party accepts a LIST — multiple parties can be selected at once.
+    All their hours and costs will be combined in the response.
+    """
     if phase:
         records = [r for r in records if r["phase"] == phase]
     if category:
         records = [r for r in records if r["category"] == category]
     if responsible_party:
-        records = [r for r in records if r["responsible_party"] == responsible_party]
+        # Support multiple responsible parties — match any in the list
+        records = [r for r in records if r["responsible_party"] in responsible_party]
     if start_date:
         records = [r for r in records if r["date"] >= start_date]
     if end_date:
@@ -133,13 +138,13 @@ def group_by_month(records):
 
 @router.get("/npt")
 async def get_all_npt_records(
-    phase:             Optional[str] = Query(None, description="Filter by phase"),
-    category:          Optional[str] = Query(None, description="Filter by category"),
-    responsible_party: Optional[str] = Query(None, description="Filter by responsible party"),
-    start_date:        Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
-    end_date:          Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    phase:             Optional[str]        = Query(None, description="Filter by phase"),
+    category:          Optional[str]        = Query(None, description="Filter by category"),
+    responsible_party: Optional[List[str]]  = Query(None, description="Filter by one or more responsible parties e.g. ?responsible_party=SMS Joy&responsible_party=Geowell"),
+    start_date:        Optional[str]        = Query(None, description="Start date YYYY-MM-DD"),
+    end_date:          Optional[str]        = Query(None, description="End date YYYY-MM-DD"),
 ):
-    """Get all NPT records with optional filters."""
+    """Get all NPT records with optional filters. responsible_party accepts multiple values."""
     try:
         records = load_npt_records()
         records = apply_filters(records, phase, category, responsible_party, start_date, end_date)
@@ -150,12 +155,12 @@ async def get_all_npt_records(
 
 @router.get("/dashboard/metrics")
 async def get_dashboard_metrics(
-    phase:             Optional[str]   = Query(None,   description="Filter by phase"),
-    category:          Optional[str]   = Query(None,   description="Filter by category"),
-    responsible_party: Optional[str]   = Query(None,   description="Filter by responsible party"),
-    start_date:        Optional[str]   = Query(None,   description="Start date YYYY-MM-DD"),
-    end_date:          Optional[str]   = Query(None,   description="End date YYYY-MM-DD"),
-    total_rig_hours:   Optional[float] = Query(2415.0, description="Total rig hours"),
+    phase:             Optional[str]       = Query(None,   description="Filter by phase"),
+    category:          Optional[str]       = Query(None,   description="Filter by category"),
+    responsible_party: Optional[List[str]] = Query(None,   description="Filter by one or more responsible parties"),
+    start_date:        Optional[str]       = Query(None,   description="Start date YYYY-MM-DD"),
+    end_date:          Optional[str]       = Query(None,   description="End date YYYY-MM-DD"),
+    total_rig_hours:   Optional[float]     = Query(2415.0, description="Total rig hours"),
 ):
     """Get all dashboard KPI metrics with optional filters."""
     try:
@@ -192,10 +197,10 @@ async def get_dashboard_metrics(
 
 @router.get("/dashboard/by-category")
 async def get_by_category(
-    responsible_party: Optional[str] = Query(None, description="Filter by responsible party"),
-    phase:             Optional[str] = Query(None, description="Filter by phase"),
-    start_date:        Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
-    end_date:          Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    responsible_party: Optional[List[str]] = Query(None, description="Filter by one or more responsible parties"),
+    phase:             Optional[str]       = Query(None, description="Filter by phase"),
+    start_date:        Optional[str]       = Query(None, description="Start date YYYY-MM-DD"),
+    end_date:          Optional[str]       = Query(None, description="End date YYYY-MM-DD"),
 ):
     """Get NPT breakdown by category with optional filters."""
     try:
@@ -208,10 +213,10 @@ async def get_by_category(
 
 @router.get("/dashboard/by-phase")
 async def get_by_phase(
-    responsible_party: Optional[str] = Query(None, description="Filter by responsible party"),
-    category:          Optional[str] = Query(None, description="Filter by category"),
-    start_date:        Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
-    end_date:          Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    responsible_party: Optional[List[str]] = Query(None, description="Filter by one or more responsible parties"),
+    category:          Optional[str]       = Query(None, description="Filter by category"),
+    start_date:        Optional[str]       = Query(None, description="Start date YYYY-MM-DD"),
+    end_date:          Optional[str]       = Query(None, description="End date YYYY-MM-DD"),
 ):
     """Get NPT breakdown by phase with optional filters."""
     try:
@@ -240,11 +245,11 @@ async def get_by_responsible_party(
 
 @router.get("/dashboard/by-month")
 async def get_by_month(
-    responsible_party: Optional[str] = Query(None, description="Filter by responsible party"),
-    phase:             Optional[str] = Query(None, description="Filter by phase"),
-    category:          Optional[str] = Query(None, description="Filter by category"),
-    start_date:        Optional[str] = Query(None, description="Start date YYYY-MM-DD"),
-    end_date:          Optional[str] = Query(None, description="End date YYYY-MM-DD"),
+    responsible_party: Optional[List[str]] = Query(None, description="Filter by one or more responsible parties"),
+    phase:             Optional[str]       = Query(None, description="Filter by phase"),
+    category:          Optional[str]       = Query(None, description="Filter by category"),
+    start_date:        Optional[str]       = Query(None, description="Start date YYYY-MM-DD"),
+    end_date:          Optional[str]       = Query(None, description="End date YYYY-MM-DD"),
 ):
     """Get NPT breakdown by month with optional filters."""
     try:
